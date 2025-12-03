@@ -4,6 +4,8 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const t = target.result;
     const glfw_dep = b.dependency("glfw", .{});
+    const volk_dep = b.dependency("volk", .{});
+    const vulkan_headers_dep = b.dependency("vulkan_headers", .{});
 
     const lib_name = b.fmt("farhorizons_deps_{s}-{s}-{s}", .{
         @tagName(t.cpu.arch),
@@ -12,13 +14,27 @@ pub fn build(b: *std.Build) !void {
     });
 
     // Copy headers step
-    const headers_step = b.step("headers", "Copy GLFW headers");
-    const install_headers = b.addInstallDirectory(.{
+    const headers_step = b.step("headers", "Copy headers");
+
+    // GLFW headers
+    const install_glfw_headers = b.addInstallDirectory(.{
         .source_dir = glfw_dep.path("include"),
         .install_dir = .{ .custom = "include" },
         .install_subdir = "",
     });
-    headers_step.dependOn(&install_headers.step);
+    headers_step.dependOn(&install_glfw_headers.step);
+
+    // Volk header
+    const install_volk_header = b.addInstallFile(volk_dep.path("volk.h"), "include/volk.h");
+    headers_step.dependOn(&install_volk_header.step);
+
+    // Vulkan headers
+    const install_vulkan_headers = b.addInstallDirectory(.{
+        .source_dir = vulkan_headers_dep.path("include"),
+        .install_dir = .{ .custom = "include" },
+        .install_subdir = "",
+    });
+    headers_step.dependOn(&install_vulkan_headers.step);
 
     // Create module for GLFW
     const glfw_module = b.createModule(.{
@@ -103,10 +119,45 @@ pub fn build(b: *std.Build) !void {
         .linkage = .static,
     });
 
-    const install_lib = b.addInstallArtifact(glfw_lib, .{
+    const install_glfw_lib = b.addInstallArtifact(glfw_lib, .{
         .dest_sub_path = b.fmt("{s}/libglfw.a", .{lib_name}),
     });
 
+    // Create module for volk
+    const volk_module = b.createModule(.{
+        .target = target,
+        .optimize = .ReleaseFast,
+        .link_libc = true,
+    });
+
+    // Add Vulkan headers include path
+    volk_module.addIncludePath(vulkan_headers_dep.path("include"));
+
+    // volk needs VK_NO_PROTOTYPES since it loads functions dynamically
+    const volk_flags: []const []const u8 = if (t.os.tag == .windows)
+        &.{ "-DVK_NO_PROTOTYPES", "-DVK_USE_PLATFORM_WIN32_KHR" }
+    else if (t.os.tag == .linux)
+        &.{ "-DVK_NO_PROTOTYPES", "-DVK_USE_PLATFORM_XLIB_KHR" }
+    else
+        &.{"-DVK_NO_PROTOTYPES"};
+
+    volk_module.addCSourceFiles(.{
+        .root = volk_dep.path(""),
+        .files = &.{"volk.c"},
+        .flags = volk_flags,
+    });
+
+    const volk_lib = b.addLibrary(.{
+        .name = "volk",
+        .root_module = volk_module,
+        .linkage = .static,
+    });
+
+    const install_volk_lib = b.addInstallArtifact(volk_lib, .{
+        .dest_sub_path = b.fmt("{s}/libvolk.a", .{lib_name}),
+    });
+
     b.default_step.dependOn(headers_step);
-    b.default_step.dependOn(&install_lib.step);
+    b.default_step.dependOn(&install_glfw_lib.step);
+    b.default_step.dependOn(&install_volk_lib.step);
 }

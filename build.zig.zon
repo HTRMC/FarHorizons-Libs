@@ -8,5 +8,13 @@
             .url = "https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip",
             .hash = "N-V-__8AAGILeQBiX6fOeXM8aImETLAuofbkuBtGo_q6zsGB",
         },
+        .volk = .{
+            .url = "https://github.com/zeux/volk/archive/refs/tags/1.4.304.tar.gz",
+            .hash = "N-V-__8AAM6ZBgBIXgvAA8c_vDecqpmN19205AyaaSjzENaf",
+        },
+        .vulkan_headers = .{
+            .url = "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.304.tar.gz",
+            .hash = "N-V-__8AACUYwwHkOfRNOmzhES0A0wAstELzgG-GdNu-uUE5",
+        },
     },
 }
