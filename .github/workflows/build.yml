@@ -47,7 +47,12 @@ jobs:
       - name: Build x86_64-windows
         run: zig build -Dtarget=x86_64-windows-gnu
 
+      - name: List output
+        shell: bash
+        run: find zig-out -type f
+
       - name: Package
+        shell: bash
         run: |
           cd zig-out/lib
           tar -czvf ../../farhorizons_deps_x86_64-windows-gnu.tar.gz farhorizons_deps_x86_64-windows-gnu/
@@ -62,8 +67,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: x86_64-linux-musl
-          - target: aarch64-linux-musl
+          - target: x86_64-linux-gnu
+          - target: aarch64-linux-gnu
     steps:
       - uses: actions/checkout@v4
 
