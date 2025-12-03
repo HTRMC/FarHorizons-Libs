@@ -1,0 +1,12 @@
+.{
+    .name = .FarHorizonsLibs,
+    .version = "0.0.1",
+    .fingerprint = 0xc776b1baa4833f3f,
+    .paths = .{""},
+    .dependencies = .{
+        .glfw = .{
+            .url = "https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip",
+            .hash = "N-V-__8AAGILeQBiX6fOeXM8aImETLAuofbkuBtGo_q6zsGB",
+        },
+    },
+}
