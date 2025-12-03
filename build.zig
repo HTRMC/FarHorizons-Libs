@@ -70,6 +70,9 @@ pub fn build(b: *std.Build) !void {
             .flags = &.{ "-D_GLFW_WIN32", "-D_UNICODE", "-DUNICODE" },
         });
     } else if (t.os.tag == .linux) {
+        // Add system include path for X11 headers
+        glfw_module.addSystemIncludePath(.{ .cwd_relative = "/usr/include" });
+
         glfw_module.addCSourceFiles(.{
             .root = glfw_dep.path("src"),
             .files = common_sources,
