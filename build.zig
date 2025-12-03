@@ -134,12 +134,8 @@ pub fn build(b: *std.Build) !void {
     volk_module.addIncludePath(vulkan_headers_dep.path("include"));
 
     // volk needs VK_NO_PROTOTYPES since it loads functions dynamically
-    const volk_flags: []const []const u8 = if (t.os.tag == .windows)
-        &.{ "-DVK_NO_PROTOTYPES", "-DVK_USE_PLATFORM_WIN32_KHR" }
-    else if (t.os.tag == .linux)
-        &.{ "-DVK_NO_PROTOTYPES", "-DVK_USE_PLATFORM_XLIB_KHR" }
-    else
-        &.{"-DVK_NO_PROTOTYPES"};
+    // Don't define VK_USE_PLATFORM_* - volk loads all platforms dynamically
+    const volk_flags: []const []const u8 = &.{"-DVK_NO_PROTOTYPES"};
 
     volk_module.addCSourceFiles(.{
         .root = volk_dep.path(""),
