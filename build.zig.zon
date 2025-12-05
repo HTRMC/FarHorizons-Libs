@@ -13,8 +13,12 @@
             .hash = "N-V-__8AAM6ZBgBIXgvAA8c_vDecqpmN19205AyaaSjzENaf",
         },
         .vulkan_headers = .{
-            .url = "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.304.tar.gz",
-            .hash = "N-V-__8AACUYwwHkOfRNOmzhES0A0wAstELzgG-GdNu-uUE5",
+            .url = "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.335.tar.gz",
+            .hash = "N-V-__8AADIiFAJfrWhQBPEi9LPInaZNnXV15Ca887-ty4M1",
+        },
+        .stb = .{
+            .url = "https://github.com/nothings/stb/archive/refs/heads/master.tar.gz",
+            .hash = "1220a73e5a7c30fe1803cce7ae377a13e663a45d6bbeb4bc27fd88e4f185442e2686",
         },
     },
 }

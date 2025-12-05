@@ -6,6 +6,7 @@ pub fn build(b: *std.Build) !void {
     const glfw_dep = b.dependency("glfw", .{});
     const volk_dep = b.dependency("volk", .{});
     const vulkan_headers_dep = b.dependency("vulkan_headers", .{});
+    const stb_dep = b.dependency("stb", .{});
 
     const lib_name = b.fmt("farhorizons_deps_{s}-{s}-{s}", .{
         @tagName(t.cpu.arch),
@@ -35,6 +36,10 @@ pub fn build(b: *std.Build) !void {
         .install_subdir = "",
     });
     headers_step.dependOn(&install_vulkan_headers.step);
+
+    // stb_image header
+    const install_stb_header = b.addInstallFile(stb_dep.path("stb_image.h"), "include/stb_image.h");
+    headers_step.dependOn(&install_stb_header.step);
 
     // Create module for GLFW
     const glfw_module = b.createModule(.{
@@ -153,7 +158,39 @@ pub fn build(b: *std.Build) !void {
         .dest_sub_path = b.fmt("{s}/libvolk.a", .{lib_name}),
     });
 
+    // Create module for stb_image
+    const stb_module = b.createModule(.{
+        .target = target,
+        .optimize = .ReleaseFast,
+        .link_libc = true,
+    });
+
+    // stb_image is header-only, so we create an implementation file
+    const stb_impl = b.addWriteFiles();
+    _ = stb_impl.add("stb_image_impl.c",
+        \\#define STB_IMAGE_IMPLEMENTATION
+        \\#include "stb_image.h"
+    );
+
+    stb_module.addIncludePath(stb_dep.path(""));
+    stb_module.addCSourceFiles(.{
+        .root = stb_impl.getDirectory(),
+        .files = &.{"stb_image_impl.c"},
+        .flags = &.{},
+    });
+
+    const stb_lib = b.addLibrary(.{
+        .name = "stb_image",
+        .root_module = stb_module,
+        .linkage = .static,
+    });
+
+    const install_stb_lib = b.addInstallArtifact(stb_lib, .{
+        .dest_sub_path = b.fmt("{s}/libstb_image.a", .{lib_name}),
+    });
+
     b.default_step.dependOn(headers_step);
     b.default_step.dependOn(&install_glfw_lib.step);
     b.default_step.dependOn(&install_volk_lib.step);
+    b.default_step.dependOn(&install_stb_lib.step);
 }
