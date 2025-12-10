@@ -71,6 +71,8 @@ jobs:
           - target: aarch64-linux-gnu
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Read Zig version
         run: echo "ZIG_VERSION=$(cat .zigversion)" >> $GITHUB_ENV
@@ -81,6 +83,22 @@ jobs:
 
       - name: Install X11 dev headers
         run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+
+      - name: Clone and build shaderc
+        run: |
+          git clone https://github.com/google/shaderc.git shaderc-src
+          cd shaderc-src
+          ./utils/git-sync-deps
+          mkdir build && cd build
+          cmake -DCMAKE_BUILD_TYPE=Release \
+                -DSHADERC_SKIP_TESTS=ON \
+                -DSHADERC_SKIP_EXAMPLES=ON \
+                -DSPIRV_SKIP_TESTS=ON \
+                ..
+          cmake --build . --config Release --target shaderc_combined -j$(nproc)
+          # Copy to the expected location
+          mkdir -p ../../shaderc/lib/${{ matrix.target }}
+          cp libshaderc/libshaderc_combined.a ../../shaderc/lib/${{ matrix.target }}/
 
       - name: Build ${{ matrix.target }}
         run: zig build -Dtarget=${{ matrix.target }}
