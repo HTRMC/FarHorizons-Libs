@@ -44,6 +44,23 @@ jobs:
         with:
           version: ${{ env.ZIG_VERSION }}
 
+      - name: Clone and build shaderc
+        shell: bash
+        run: |
+          git clone https://github.com/google/shaderc.git shaderc-src
+          cd shaderc-src
+          ./utils/git-sync-deps
+          mkdir build && cd build
+          cmake -DCMAKE_BUILD_TYPE=Release \
+                -DSHADERC_SKIP_TESTS=ON \
+                -DSHADERC_SKIP_EXAMPLES=ON \
+                -DSPIRV_SKIP_TESTS=ON \
+                ..
+          cmake --build . --config Release --target shaderc_combined -j$(nproc)
+          # Copy to the expected location
+          mkdir -p ../../shaderc/lib/x86_64-windows-gnu
+          cp libshaderc/Release/shaderc_combined.lib ../../shaderc/lib/x86_64-windows-gnu/
+
       - name: Build x86_64-windows
         run: zig build -Dtarget=x86_64-windows-gnu
 
