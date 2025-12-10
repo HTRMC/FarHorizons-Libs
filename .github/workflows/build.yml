@@ -44,22 +44,36 @@ jobs:
         with:
           version: ${{ env.ZIG_VERSION }}
 
+      - name: Install MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            git
+            python3
+
       - name: Clone and build shaderc
-        shell: bash
+        shell: msys2 {0}
         run: |
           git clone https://github.com/google/shaderc.git shaderc-src
           cd shaderc-src
           ./utils/git-sync-deps
           mkdir build && cd build
-          cmake -DCMAKE_BUILD_TYPE=Release \
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_C_COMPILER=gcc \
+                -DCMAKE_CXX_COMPILER=g++ \
                 -DSHADERC_SKIP_TESTS=ON \
                 -DSHADERC_SKIP_EXAMPLES=ON \
                 -DSPIRV_SKIP_TESTS=ON \
                 ..
-          cmake --build . --config Release --target shaderc_combined -j$(nproc)
-          # Copy to the expected location
+          ninja shaderc_combined
+          # Copy to the expected location (MinGW produces .a files)
           mkdir -p ../../shaderc/lib/x86_64-windows-gnu
-          cp libshaderc/Release/shaderc_combined.lib ../../shaderc/lib/x86_64-windows-gnu/
+          cp libshaderc/libshaderc_combined.a ../../shaderc/lib/x86_64-windows-gnu/
 
       - name: Build x86_64-windows
         run: zig build -Dtarget=x86_64-windows-gnu

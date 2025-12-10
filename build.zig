@@ -199,10 +199,9 @@ pub fn build(b: *std.Build) !void {
 
     // Install pre-built shaderc library
     // The library should be placed in shaderc/lib/{platform}/
-    // On Windows: shaderc_combined.lib (MSVC format)
-    // On Linux: libshaderc_combined.a (GNU ar format)
-    const shaderc_src_name = if (t.os.tag == .windows) "shaderc_combined.lib" else "libshaderc_combined.a";
-    const shaderc_dst_name = if (t.os.tag == .windows) "shaderc_combined.lib" else "libshaderc_combined.a";
+    // All platforms use GNU ar format (libshaderc_combined.a)
+    const shaderc_src_name = "libshaderc_combined.a";
+    const shaderc_dst_name = "libshaderc_combined.a";
     const shaderc_lib_path = b.fmt("shaderc/lib/{s}-{s}-{s}/{s}", .{
         @tagName(t.cpu.arch),
         @tagName(t.os.tag),
