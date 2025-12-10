@@ -41,6 +41,14 @@ pub fn build(b: *std.Build) !void {
     const install_stb_header = b.addInstallFile(stb_dep.path("stb_image.h"), "include/stb_image.h");
     headers_step.dependOn(&install_stb_header.step);
 
+    // shaderc headers (from pre-built shaderc directory)
+    const install_shaderc_headers = b.addInstallDirectory(.{
+        .source_dir = b.path("shaderc/include"),
+        .install_dir = .{ .custom = "include" },
+        .install_subdir = "",
+    });
+    headers_step.dependOn(&install_shaderc_headers.step);
+
     // Create module for GLFW
     const glfw_module = b.createModule(.{
         .target = target,
@@ -189,8 +197,27 @@ pub fn build(b: *std.Build) !void {
         .dest_sub_path = b.fmt("{s}/libstb_image.a", .{lib_name}),
     });
 
+    // Install pre-built shaderc library
+    // The library should be placed in shaderc/lib/{platform}/
+    // On Windows: shaderc_combined.lib (MSVC format)
+    // On Linux: libshaderc_combined.a (GNU ar format)
+    const shaderc_src_name = if (t.os.tag == .windows) "shaderc_combined.lib" else "libshaderc_combined.a";
+    const shaderc_dst_name = if (t.os.tag == .windows) "shaderc_combined.lib" else "libshaderc_combined.a";
+    const shaderc_lib_path = b.fmt("shaderc/lib/{s}-{s}-{s}/{s}", .{
+        @tagName(t.cpu.arch),
+        @tagName(t.os.tag),
+        @tagName(t.abi),
+        shaderc_src_name,
+    });
+    const install_shaderc_lib = b.addInstallFileWithDir(
+        b.path(shaderc_lib_path),
+        .lib,
+        b.fmt("{s}/{s}", .{ lib_name, shaderc_dst_name }),
+    );
+
     b.default_step.dependOn(headers_step);
     b.default_step.dependOn(&install_glfw_lib.step);
     b.default_step.dependOn(&install_volk_lib.step);
     b.default_step.dependOn(&install_stb_lib.step);
+    b.default_step.dependOn(&install_shaderc_lib.step);
 }
