@@ -71,17 +71,9 @@ jobs:
                 -DSPIRV_SKIP_TESTS=ON \
                 ..
           ninja shaderc_combined
-          # Merge libstdc++ into shaderc_combined for self-contained linking
-          mkdir -p merged/shaderc merged/stdcpp
-          (cd merged/shaderc && ar x ../../libshaderc/libshaderc_combined.a)
-          (cd merged/stdcpp && ar x /mingw64/lib/libstdc++.a)
-          # Create merged archive with both sets of object files
-          cd merged
-          find shaderc stdcpp -name '*.o' | xargs ar rcs libshaderc_combined.a
-          cd ..
           # Copy to the expected location
           mkdir -p ../../shaderc/lib/x86_64-windows-gnu
-          cp merged/libshaderc_combined.a ../../shaderc/lib/x86_64-windows-gnu/
+          cp libshaderc/libshaderc_combined.a ../../shaderc/lib/x86_64-windows-gnu/
 
       - name: Build x86_64-windows
         run: zig build -Dtarget=x86_64-windows-gnu
