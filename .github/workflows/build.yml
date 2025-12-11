@@ -72,11 +72,12 @@ jobs:
                 ..
           ninja shaderc_combined
           # Merge libstdc++ into shaderc_combined for self-contained linking
-          mkdir -p merged
-          cd merged
-          ar x ../libshaderc/libshaderc_combined.a
-          ar x /mingw64/lib/libstdc++.a
-          ar rcs libshaderc_combined.a *.o
+          mkdir -p merged/shaderc merged/stdcpp
+          cd merged/shaderc && ar x ../../libshaderc/libshaderc_combined.a
+          cd ../stdcpp && ar x /mingw64/lib/libstdc++.a
+          cd ..
+          # Create merged archive with both sets of object files
+          ar rcs libshaderc_combined.a shaderc/*.o stdcpp/*.o
           # Copy to the expected location
           mkdir -p ../../../shaderc/lib/x86_64-windows-gnu
           cp libshaderc_combined.a ../../../shaderc/lib/x86_64-windows-gnu/
