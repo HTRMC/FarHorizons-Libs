@@ -71,9 +71,15 @@ jobs:
                 -DSPIRV_SKIP_TESTS=ON \
                 ..
           ninja shaderc_combined
-          # Copy to the expected location (MinGW produces .a files)
-          mkdir -p ../../shaderc/lib/x86_64-windows-gnu
-          cp libshaderc/libshaderc_combined.a ../../shaderc/lib/x86_64-windows-gnu/
+          # Merge libstdc++ into shaderc_combined for self-contained linking
+          mkdir -p merged
+          cd merged
+          ar x ../libshaderc/libshaderc_combined.a
+          ar x /mingw64/lib/libstdc++.a
+          ar rcs libshaderc_combined.a *.o
+          # Copy to the expected location
+          mkdir -p ../../../shaderc/lib/x86_64-windows-gnu
+          cp libshaderc_combined.a ../../../shaderc/lib/x86_64-windows-gnu/
 
       - name: Build x86_64-windows
         run: zig build -Dtarget=x86_64-windows-gnu
