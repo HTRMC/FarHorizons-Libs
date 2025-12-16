@@ -7,6 +7,9 @@ on:
     paths:
       - '.github/workflows/build-shaderc.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build-linux-x86_64:
     runs-on: ubuntu-24.04
@@ -73,6 +76,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add shaderc/lib/x86_64-linux-gnu/libshaderc_combined.a
           git commit -m "Build shaderc for x86_64-linux-gnu with libc++" || echo "No changes to commit"
+          git pull --rebase || true
           git push
 
   build-linux-aarch64:
@@ -83,9 +87,9 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build python3 \
+          sudo apt-get install -y clang lld cmake ninja-build python3 \
             gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-            libc++-dev-arm64-cross libc++abi-dev-arm64-cross
+            libc++-18-dev-arm64-cross libc++abi-18-dev-arm64-cross
 
       - name: Clone shaderc
         run: |
@@ -105,8 +109,9 @@ jobs:
           set(CMAKE_CXX_COMPILER clang++)
           set(CMAKE_C_COMPILER_TARGET aarch64-linux-gnu)
           set(CMAKE_CXX_COMPILER_TARGET aarch64-linux-gnu)
-          set(CMAKE_CXX_FLAGS "-stdlib=libc++")
-          set(CMAKE_EXE_LINKER_FLAGS "-stdlib=libc++ -lc++abi")
+          set(CMAKE_SYSROOT /usr/aarch64-linux-gnu)
+          set(CMAKE_CXX_FLAGS "-stdlib=libc++ -I/usr/aarch64-linux-gnu/include/c++/v1")
+          set(CMAKE_EXE_LINKER_FLAGS "-stdlib=libc++ -fuse-ld=lld -L/usr/aarch64-linux-gnu/lib")
           set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
           set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
           set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
@@ -128,11 +133,11 @@ jobs:
           mkdir -p combined
           cd combined
 
-          # Extract all static libraries
-          ar x ../shaderc-src/build/libshaderc/libshaderc_combined.a
+          # Extract all static libraries using aarch64 ar
+          llvm-ar x ../shaderc-src/build/libshaderc/libshaderc_combined.a
 
           # Create combined library
-          ar rcs libshaderc_combined.a *.o
+          llvm-ar rcs libshaderc_combined.a *.o
 
           ls -lh libshaderc_combined.a
 
@@ -149,6 +154,7 @@ jobs:
 
       - name: Commit and push
         run: |
+          git pull --rebase
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add shaderc/lib/aarch64-linux-gnu/libshaderc_combined.a
