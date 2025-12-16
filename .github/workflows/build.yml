@@ -112,8 +112,11 @@ jobs:
         with:
           version: ${{ env.ZIG_VERSION }}
 
-      - name: Install X11 dev headers
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            clang libc++-dev libc++abi-dev cmake ninja-build python3
 
       - name: Clone and build shaderc
         run: |
@@ -121,12 +124,19 @@ jobs:
           cd shaderc-src
           ./utils/git-sync-deps
           mkdir build && cd build
-          cmake -DCMAKE_BUILD_TYPE=Release \
-                -DSHADERC_SKIP_TESTS=ON \
-                -DSHADERC_SKIP_EXAMPLES=ON \
-                -DSPIRV_SKIP_TESTS=ON \
-                ..
-          cmake --build . --config Release --target shaderc_combined -j$(nproc)
+          cmake -GNinja \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
+            -DCMAKE_EXE_LINKER_FLAGS="-stdlib=libc++ -lc++abi" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSHADERC_SKIP_TESTS=ON \
+            -DSHADERC_SKIP_EXAMPLES=ON \
+            -DSHADERC_SKIP_COPYRIGHT_CHECK=ON \
+            -DSPIRV_SKIP_TESTS=ON \
+            -DSPIRV_WERROR=OFF \
+            ..
+          ninja
           # Copy to the expected location
           mkdir -p ../../shaderc/lib/${{ matrix.target }}
           cp libshaderc/libshaderc_combined.a ../../shaderc/lib/${{ matrix.target }}/
