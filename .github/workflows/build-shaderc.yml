@@ -1,0 +1,156 @@
+name: Build shaderc
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-shaderc.yml'
+
+jobs:
+  build-linux-x86_64:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libc++-dev libc++abi-dev cmake ninja-build python3
+
+      - name: Clone shaderc
+        run: |
+          git clone https://github.com/google/shaderc.git shaderc-src
+          cd shaderc-src
+          ./utils/git-sync-deps
+
+      - name: Build shaderc with clang/libc++
+        run: |
+          cd shaderc-src
+          mkdir build && cd build
+          cmake -GNinja \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
+            -DCMAKE_EXE_LINKER_FLAGS="-stdlib=libc++ -lc++abi" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSHADERC_SKIP_TESTS=ON \
+            -DSHADERC_SKIP_EXAMPLES=ON \
+            -DSHADERC_SKIP_COPYRIGHT_CHECK=ON \
+            -DSPIRV_SKIP_TESTS=ON \
+            -DSPIRV_WERROR=OFF \
+            ..
+          ninja
+
+      - name: Create combined library
+        run: |
+          mkdir -p combined
+          cd combined
+
+          # Extract all static libraries
+          ar x ../shaderc-src/build/libshaderc/libshaderc_combined.a
+
+          # Create combined library
+          ar rcs libshaderc_combined.a *.o
+
+          # Show size
+          ls -lh libshaderc_combined.a
+
+      - name: Copy to lib directory
+        run: |
+          mkdir -p shaderc/lib/x86_64-linux-gnu
+          cp combined/libshaderc_combined.a shaderc/lib/x86_64-linux-gnu/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shaderc-x86_64-linux-gnu
+          path: shaderc/lib/x86_64-linux-gnu/libshaderc_combined.a
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add shaderc/lib/x86_64-linux-gnu/libshaderc_combined.a
+          git commit -m "Build shaderc for x86_64-linux-gnu with libc++" || echo "No changes to commit"
+          git push
+
+  build-linux-aarch64:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build python3 \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+            libc++-dev-arm64-cross libc++abi-dev-arm64-cross
+
+      - name: Clone shaderc
+        run: |
+          git clone https://github.com/google/shaderc.git shaderc-src
+          cd shaderc-src
+          ./utils/git-sync-deps
+
+      - name: Build shaderc for aarch64
+        run: |
+          cd shaderc-src
+          mkdir build && cd build
+
+          cat > toolchain.cmake << 'EOF'
+          set(CMAKE_SYSTEM_NAME Linux)
+          set(CMAKE_SYSTEM_PROCESSOR aarch64)
+          set(CMAKE_C_COMPILER clang)
+          set(CMAKE_CXX_COMPILER clang++)
+          set(CMAKE_C_COMPILER_TARGET aarch64-linux-gnu)
+          set(CMAKE_CXX_COMPILER_TARGET aarch64-linux-gnu)
+          set(CMAKE_CXX_FLAGS "-stdlib=libc++")
+          set(CMAKE_EXE_LINKER_FLAGS "-stdlib=libc++ -lc++abi")
+          set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+          set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+          set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+          EOF
+
+          cmake -GNinja \
+            -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSHADERC_SKIP_TESTS=ON \
+            -DSHADERC_SKIP_EXAMPLES=ON \
+            -DSHADERC_SKIP_COPYRIGHT_CHECK=ON \
+            -DSPIRV_SKIP_TESTS=ON \
+            -DSPIRV_WERROR=OFF \
+            ..
+          ninja
+
+      - name: Create combined library
+        run: |
+          mkdir -p combined
+          cd combined
+
+          # Extract all static libraries
+          ar x ../shaderc-src/build/libshaderc/libshaderc_combined.a
+
+          # Create combined library
+          ar rcs libshaderc_combined.a *.o
+
+          ls -lh libshaderc_combined.a
+
+      - name: Copy to lib directory
+        run: |
+          mkdir -p shaderc/lib/aarch64-linux-gnu
+          cp combined/libshaderc_combined.a shaderc/lib/aarch64-linux-gnu/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shaderc-aarch64-linux-gnu
+          path: shaderc/lib/aarch64-linux-gnu/libshaderc_combined.a
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add shaderc/lib/aarch64-linux-gnu/libshaderc_combined.a
+          git commit -m "Build shaderc for aarch64-linux-gnu with libc++" || echo "No changes to commit"
+          git push
