@@ -107,6 +107,11 @@ jobs:
         with:
           version: ${{ env.ZIG_VERSION }}
 
+      - name: Install X11 headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+
       - name: Build x86_64-linux-gnu
         run: zig build -Dtarget=x86_64-linux-gnu
 
@@ -133,6 +138,11 @@ jobs:
       - uses: mlugg/setup-zig@v2
         with:
           version: ${{ env.ZIG_VERSION }}
+
+      - name: Install X11 headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 
       - name: Build aarch64-linux-gnu
         run: zig build -Dtarget=aarch64-linux-gnu
