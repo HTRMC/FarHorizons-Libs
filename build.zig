@@ -49,6 +49,14 @@ pub fn build(b: *std.Build) !void {
     });
     headers_step.dependOn(&install_shaderc_headers.step);
 
+    // FastNoise2 headers (from pre-built fastnoise2 directory)
+    const install_fastnoise2_headers = b.addInstallDirectory(.{
+        .source_dir = b.path("fastnoise2/include"),
+        .install_dir = .{ .custom = "include" },
+        .install_subdir = "",
+    });
+    headers_step.dependOn(&install_fastnoise2_headers.step);
+
     // Create module for GLFW
     const glfw_module = b.createModule(.{
         .target = target,
@@ -214,9 +222,26 @@ pub fn build(b: *std.Build) !void {
         b.fmt("{s}/{s}", .{ lib_name, shaderc_dst_name }),
     );
 
+    // Install pre-built FastNoise2 library
+    // The library should be placed in fastnoise2/lib/{platform}/
+    const fastnoise2_src_name = "libFastNoise.a";
+    const fastnoise2_dst_name = "libFastNoise.a";
+    const fastnoise2_lib_path = b.fmt("fastnoise2/lib/{s}-{s}-{s}/{s}", .{
+        @tagName(t.cpu.arch),
+        @tagName(t.os.tag),
+        @tagName(t.abi),
+        fastnoise2_src_name,
+    });
+    const install_fastnoise2_lib = b.addInstallFileWithDir(
+        b.path(fastnoise2_lib_path),
+        .lib,
+        b.fmt("{s}/{s}", .{ lib_name, fastnoise2_dst_name }),
+    );
+
     b.default_step.dependOn(headers_step);
     b.default_step.dependOn(&install_glfw_lib.step);
     b.default_step.dependOn(&install_volk_lib.step);
     b.default_step.dependOn(&install_stb_lib.step);
     b.default_step.dependOn(&install_shaderc_lib.step);
+    b.default_step.dependOn(&install_fastnoise2_lib.step);
 }
