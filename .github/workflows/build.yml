@@ -53,6 +53,9 @@ jobs:
             mingw-w64-clang-x86_64-clang
             mingw-w64-clang-x86_64-cmake
             mingw-w64-clang-x86_64-ninja
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
             git
             python3
 
@@ -77,24 +80,21 @@ jobs:
 
       - name: Clone and build FastNoise2
         shell: msys2 {0}
-        env:
-          MSYSTEM: MINGW64
         run: |
-          # Install GCC toolchain for FastNoise2 (FastSIMD requires GCC-specific flags)
-          pacman -S --noconfirm mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja
+          # Use GCC from MINGW64 instead of Clang - FastSIMD uses GCC-specific assembler flags
           export PATH="/mingw64/bin:$PATH"
           git clone --depth 1 https://github.com/Auburn/FastNoise2.git fastnoise2-src
           cd fastnoise2-src
           mkdir build && cd build
-          # Use GCC instead of Clang - FastSIMD uses GCC-specific assembler flags
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_C_COMPILER=gcc \
-                -DCMAKE_CXX_COMPILER=g++ \
+          /mingw64/bin/cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_C_COMPILER=/mingw64/bin/gcc.exe \
+                -DCMAKE_CXX_COMPILER=/mingw64/bin/g++.exe \
+                -DCMAKE_MAKE_PROGRAM=/mingw64/bin/ninja.exe \
                 -DBUILD_SHARED_LIBS=OFF \
                 -DFASTNOISE2_TESTS=OFF \
                 -DFASTNOISE2_TOOLS=OFF \
                 ..
-          ninja FastNoise
+          /mingw64/bin/ninja FastNoise
           # Copy to the expected location
           mkdir -p ../../fastnoise2/lib/x86_64-windows-gnu
           cp src/libFastNoise.a ../../fastnoise2/lib/x86_64-windows-gnu/
