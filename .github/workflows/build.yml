@@ -86,6 +86,7 @@ jobs:
                 -DCMAKE_CXX_COMPILER=clang++ \
                 -DBUILD_SHARED_LIBS=OFF \
                 -DFASTNOISE2_TESTS=OFF \
+            -DFASTNOISE2_TOOLS=OFF \
                 ..
           ninja FastNoise
           # Copy to the expected location
@@ -165,6 +166,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=OFF \
             -DFASTNOISE2_TESTS=OFF \
+            -DFASTNOISE2_TOOLS=OFF \
             ..
           ninja FastNoise
           mkdir -p ../../fastnoise2/lib/x86_64-linux-gnu
@@ -238,6 +240,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=OFF \
             -DFASTNOISE2_TESTS=OFF \
+            -DFASTNOISE2_TOOLS=OFF \
             ..
           ninja FastNoise
           mkdir -p ../../fastnoise2/lib/aarch64-linux-gnu
