@@ -78,15 +78,18 @@ jobs:
       - name: Clone and build FastNoise2
         shell: msys2 {0}
         run: |
+          # Install GCC toolchain for FastNoise2 (FastSIMD requires GCC-specific flags)
+          pacman -S --noconfirm mingw-w64-x86_64-gcc
           git clone --depth 1 https://github.com/Auburn/FastNoise2.git fastnoise2-src
           cd fastnoise2-src
           mkdir build && cd build
+          # Use GCC instead of Clang - FastSIMD uses GCC-specific assembler flags
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_C_COMPILER=clang \
-                -DCMAKE_CXX_COMPILER=clang++ \
+                -DCMAKE_C_COMPILER=/mingw64/bin/gcc \
+                -DCMAKE_CXX_COMPILER=/mingw64/bin/g++ \
                 -DBUILD_SHARED_LIBS=OFF \
                 -DFASTNOISE2_TESTS=OFF \
-            -DFASTNOISE2_TOOLS=OFF \
+                -DFASTNOISE2_TOOLS=OFF \
                 ..
           ninja FastNoise
           # Copy to the expected location
