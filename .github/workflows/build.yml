@@ -81,20 +81,24 @@ jobs:
       - name: Clone and build FastNoise2
         shell: msys2 {0}
         run: |
-          # Use GCC from MINGW64 instead of Clang - FastSIMD uses GCC-specific assembler flags
-          export PATH="/mingw64/bin:$PATH"
+          # Use Clang for libc++ ABI compatibility with Zig
           git clone --depth 1 https://github.com/Auburn/FastNoise2.git fastnoise2-src
           cd fastnoise2-src
+
+          # Patch ClassSIMD.cmake to skip GCC-only assembler flag for Clang
+          # The -Wa,-muse-unaligned-vector-move flag is only supported by GCC
+          sed -i 's/if(MINGW)/if(MINGW AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")/' \
+            cmake/FastSIMD/ClassSIMD.cmake
+
           mkdir build && cd build
-          /mingw64/bin/cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_C_COMPILER=/mingw64/bin/gcc.exe \
-                -DCMAKE_CXX_COMPILER=/mingw64/bin/g++.exe \
-                -DCMAKE_MAKE_PROGRAM=/mingw64/bin/ninja.exe \
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_C_COMPILER=clang \
+                -DCMAKE_CXX_COMPILER=clang++ \
                 -DBUILD_SHARED_LIBS=OFF \
                 -DFASTNOISE2_TESTS=OFF \
                 -DFASTNOISE2_TOOLS=OFF \
                 ..
-          /mingw64/bin/ninja FastNoise
+          ninja FastNoise
           # Copy to the expected location
           mkdir -p ../../fastnoise2/lib/x86_64-windows-gnu
           cp src/libFastNoise.a ../../fastnoise2/lib/x86_64-windows-gnu/
