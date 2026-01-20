@@ -84,13 +84,24 @@ jobs:
           # Use Clang for libc++ ABI compatibility with Zig
           git clone --depth 1 https://github.com/Auburn/FastNoise2.git fastnoise2-src
           cd fastnoise2-src
+          mkdir build && cd build
+
+          # Run cmake configure first (this fetches FastSIMD dependency)
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_C_COMPILER=clang \
+                -DCMAKE_CXX_COMPILER=clang++ \
+                -DBUILD_SHARED_LIBS=OFF \
+                -DFASTNOISE2_TESTS=OFF \
+                -DFASTNOISE2_TOOLS=OFF \
+                .. || true
 
           # Patch ClassSIMD.cmake to skip GCC-only assembler flag for Clang
           # The -Wa,-muse-unaligned-vector-move flag is only supported by GCC
+          # FastSIMD is fetched to _deps during configure
           sed -i 's/if(MINGW)/if(MINGW AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")/' \
-            cmake/FastSIMD/ClassSIMD.cmake
+            _deps/fastsimd-src/dispatch/cmake/ClassSIMD.cmake
 
-          mkdir build && cd build
+          # Re-run cmake after patching
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_C_COMPILER=clang \
                 -DCMAKE_CXX_COMPILER=clang++ \
@@ -98,6 +109,7 @@ jobs:
                 -DFASTNOISE2_TESTS=OFF \
                 -DFASTNOISE2_TOOLS=OFF \
                 ..
+
           ninja FastNoise
           # Copy to the expected location
           mkdir -p ../../fastnoise2/lib/x86_64-windows-gnu
