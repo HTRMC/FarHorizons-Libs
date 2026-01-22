@@ -7,6 +7,7 @@ pub fn build(b: *std.Build) !void {
     const volk_dep = b.dependency("volk", .{});
     const vulkan_headers_dep = b.dependency("vulkan_headers", .{});
     const stb_dep = b.dependency("stb", .{});
+    const tracy_dep = b.dependency("tracy", .{});
 
     const lib_name = b.fmt("farhorizons_deps_{s}-{s}-{s}", .{
         @tagName(t.cpu.arch),
@@ -56,6 +57,14 @@ pub fn build(b: *std.Build) !void {
         .install_subdir = "",
     });
     headers_step.dependOn(&install_fastnoise2_headers.step);
+
+    // Tracy headers (public/ directory contains Tracy.hpp and tracy/ subdirectory)
+    const install_tracy_headers = b.addInstallDirectory(.{
+        .source_dir = tracy_dep.path("public"),
+        .install_dir = .{ .custom = "include" },
+        .install_subdir = "",
+    });
+    headers_step.dependOn(&install_tracy_headers.step);
 
     // Create module for GLFW
     const glfw_module = b.createModule(.{
@@ -238,10 +247,52 @@ pub fn build(b: *std.Build) !void {
         b.fmt("{s}/{s}", .{ lib_name, fastnoise2_dst_name }),
     );
 
+    // Create module for Tracy profiler client
+    const tracy_module = b.createModule(.{
+        .target = target,
+        .optimize = .ReleaseFast,
+        .link_libc = true,
+        .link_libcpp = true, // Tracy is C++
+    });
+
+    tracy_module.addIncludePath(tracy_dep.path("public"));
+
+    // Tracy compile flags - use static array for simplicity
+    const tracy_flags_common: []const []const u8 = &.{
+        "-DTRACY_ENABLE", // Enable Tracy profiling
+        "-DTRACY_ON_DEMAND", // Only profile when profiler is connected
+    };
+
+    const tracy_flags_windows: []const []const u8 = &.{
+        "-DTRACY_ENABLE",
+        "-DTRACY_ON_DEMAND",
+        "-D_WIN32_WINNT=0x0602", // Windows 8+
+        "-DWINVER=0x0602",
+    };
+
+    const tracy_flags = if (t.os.tag == .windows) tracy_flags_windows else tracy_flags_common;
+
+    tracy_module.addCSourceFiles(.{
+        .root = tracy_dep.path("public"),
+        .files = &.{"TracyClient.cpp"},
+        .flags = tracy_flags,
+    });
+
+    const tracy_lib = b.addLibrary(.{
+        .name = "tracy",
+        .root_module = tracy_module,
+        .linkage = .static,
+    });
+
+    const install_tracy_lib = b.addInstallArtifact(tracy_lib, .{
+        .dest_sub_path = b.fmt("{s}/libtracy.a", .{lib_name}),
+    });
+
     b.default_step.dependOn(headers_step);
     b.default_step.dependOn(&install_glfw_lib.step);
     b.default_step.dependOn(&install_volk_lib.step);
     b.default_step.dependOn(&install_stb_lib.step);
     b.default_step.dependOn(&install_shaderc_lib.step);
     b.default_step.dependOn(&install_fastnoise2_lib.step);
+    b.default_step.dependOn(&install_tracy_lib.step);
 }
