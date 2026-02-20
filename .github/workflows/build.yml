@@ -111,9 +111,9 @@ jobs:
                 ..
 
           ninja FastNoise
-          # Copy to the expected location
+          # Copy to the expected location (v1.1.0+ outputs to Release/lib/)
           mkdir -p ../../fastnoise2/lib/x86_64-windows-gnu
-          cp src/libFastNoise.a ../../fastnoise2/lib/x86_64-windows-gnu/
+          cp Release/lib/libFastNoise.a ../../fastnoise2/lib/x86_64-windows-gnu/
 
       - name: Build x86_64-windows
         run: zig build -Dtarget=x86_64-windows-gnu
@@ -192,7 +192,7 @@ jobs:
             ..
           ninja FastNoise
           mkdir -p ../../fastnoise2/lib/x86_64-linux-gnu
-          cp src/libFastNoise.a ../../fastnoise2/lib/x86_64-linux-gnu/
+          cp Release/lib/libFastNoise.a ../../fastnoise2/lib/x86_64-linux-gnu/
 
       - name: Build x86_64-linux-gnu
         run: zig build -Dtarget=x86_64-linux-gnu
@@ -266,7 +266,7 @@ jobs:
             ..
           ninja FastNoise
           mkdir -p ../../fastnoise2/lib/aarch64-linux-gnu
-          cp src/libFastNoise.a ../../fastnoise2/lib/aarch64-linux-gnu/
+          cp Release/lib/libFastNoise.a ../../fastnoise2/lib/aarch64-linux-gnu/
 
       - name: Build aarch64-linux-gnu
         run: zig build -Dtarget=aarch64-linux-gnu
