@@ -24,5 +24,9 @@
             .url = "https://github.com/wolfpld/tracy/archive/refs/tags/v0.13.1.tar.gz",
             .hash = "N-V-__8AAOncKwEm1F9c5LrT7HMNmRMYX8-fAoqpc6YyTu9X",
         },
+        .zstd = .{
+            .url = "https://github.com/facebook/zstd/archive/refs/tags/v1.5.7.zip",
+            .hash = "N-V-__8AAP57fwA8D9D4JNtWtneLS8FNcptD9pAzQqZrimPd",
+        },
     },
 }

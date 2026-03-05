@@ -8,6 +8,7 @@ pub fn build(b: *std.Build) !void {
     const vulkan_headers_dep = b.dependency("vulkan_headers", .{});
     const stb_dep = b.dependency("stb", .{});
     const tracy_dep = b.dependency("tracy", .{});
+    const zstd_dep = b.dependency("zstd", .{});
 
     const lib_name = b.fmt("farhorizons_deps_{s}-{s}-{s}", .{
         @tagName(t.cpu.arch),
@@ -65,6 +66,10 @@ pub fn build(b: *std.Build) !void {
         .install_subdir = "",
     });
     headers_step.dependOn(&install_tracy_headers.step);
+
+    // zstd header
+    const install_zstd_header = b.addInstallFile(zstd_dep.path("lib/zstd.h"), "include/zstd.h");
+    headers_step.dependOn(&install_zstd_header.step);
 
     // Create module for GLFW
     const glfw_module = b.createModule(.{
@@ -288,6 +293,31 @@ pub fn build(b: *std.Build) !void {
         .dest_sub_path = b.fmt("{s}/libtracy.a", .{lib_name}),
     });
 
+    // Create module for zstd
+    const zstd_module = b.createModule(.{
+        .target = target,
+        .optimize = .ReleaseFast,
+        .link_libc = true,
+    });
+
+    zstd_module.addIncludePath(zstd_dep.path("lib"));
+    zstd_module.addIncludePath(zstd_dep.path("lib/common"));
+    zstd_module.addCSourceFiles(.{
+        .root = zstd_dep.path("build/single_file_libs"),
+        .files = &.{"zstd-in.c"},
+        .flags = &.{ "-DZSTD_DISABLE_ASM", "-DXXH_NAMESPACE=ZSTD_" },
+    });
+
+    const zstd_lib = b.addLibrary(.{
+        .name = "zstd",
+        .root_module = zstd_module,
+        .linkage = .static,
+    });
+
+    const install_zstd_lib = b.addInstallArtifact(zstd_lib, .{
+        .dest_sub_path = b.fmt("{s}/libzstd.a", .{lib_name}),
+    });
+
     b.default_step.dependOn(headers_step);
     b.default_step.dependOn(&install_glfw_lib.step);
     b.default_step.dependOn(&install_volk_lib.step);
@@ -295,4 +325,5 @@ pub fn build(b: *std.Build) !void {
     b.default_step.dependOn(&install_shaderc_lib.step);
     b.default_step.dependOn(&install_fastnoise2_lib.step);
     b.default_step.dependOn(&install_tracy_lib.step);
+    b.default_step.dependOn(&install_zstd_lib.step);
 }
