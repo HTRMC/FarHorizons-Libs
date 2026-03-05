@@ -302,10 +302,51 @@ pub fn build(b: *std.Build) !void {
 
     zstd_module.addIncludePath(zstd_dep.path("lib"));
     zstd_module.addIncludePath(zstd_dep.path("lib/common"));
+
+    const zstd_flags: []const []const u8 = &.{ "-DZSTD_DISABLE_ASM", "-DXXH_NAMESPACE=ZSTD_" };
     zstd_module.addCSourceFiles(.{
-        .root = zstd_dep.path("build/single_file_libs"),
-        .files = &.{"zstd-in.c"},
-        .flags = &.{ "-DZSTD_DISABLE_ASM", "-DXXH_NAMESPACE=ZSTD_" },
+        .root = zstd_dep.path("lib/common"),
+        .files = &.{
+            "debug.c",
+            "entropy_common.c",
+            "error_private.c",
+            "fse_decompress.c",
+            "pool.c",
+            "threading.c",
+            "xxhash.c",
+            "zstd_common.c",
+        },
+        .flags = zstd_flags,
+    });
+    zstd_module.addCSourceFiles(.{
+        .root = zstd_dep.path("lib/compress"),
+        .files = &.{
+            "fse_compress.c",
+            "hist.c",
+            "huf_compress.c",
+            "zstd_compress.c",
+            "zstd_compress_literals.c",
+            "zstd_compress_sequences.c",
+            "zstd_compress_superblock.c",
+            "zstd_double_fast.c",
+            "zstd_fast.c",
+            "zstd_lazy.c",
+            "zstd_ldm.c",
+            "zstd_opt.c",
+            "zstd_preSplit.c",
+            "zstdmt_compress.c",
+        },
+        .flags = zstd_flags,
+    });
+    zstd_module.addCSourceFiles(.{
+        .root = zstd_dep.path("lib/decompress"),
+        .files = &.{
+            "huf_decompress.c",
+            "zstd_ddict.c",
+            "zstd_decompress.c",
+            "zstd_decompress_block.c",
+        },
+        .flags = zstd_flags,
     });
 
     const zstd_lib = b.addLibrary(.{
