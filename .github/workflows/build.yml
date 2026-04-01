@@ -151,6 +151,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            libwayland-dev libxkbcommon-dev wayland-protocols \
             clang libc++-dev libc++abi-dev cmake ninja-build python3
 
       - name: Clone and build shaderc
@@ -225,6 +226,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            libwayland-dev libxkbcommon-dev wayland-protocols \
             clang libc++-dev libc++abi-dev cmake ninja-build python3
 
       - name: Clone and build shaderc

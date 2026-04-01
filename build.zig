@@ -121,13 +121,14 @@ pub fn build(b: *std.Build) !void {
             .flags = &.{ "-D_GLFW_WIN32", "-D_UNICODE", "-DUNICODE" },
         });
     } else if (t.os.tag == .linux) {
-        // Add system include path for X11 headers
         glfw_module.addSystemIncludePath(.{ .cwd_relative = "/usr/include" });
+
+        const linux_flags = &[_][]const u8{ "-D_GLFW_X11", "-D_GLFW_WAYLAND", "-D_POSIX_C_SOURCE=200809L" };
 
         glfw_module.addCSourceFiles(.{
             .root = glfw_dep.path("src"),
             .files = common_sources,
-            .flags = &.{ "-D_GLFW_X11", "-D_POSIX_C_SOURCE=200809L" },
+            .flags = linux_flags,
         });
         const linux_sources = &[_][]const u8{
             "posix_module.c",
@@ -136,15 +137,20 @@ pub fn build(b: *std.Build) !void {
             "posix_time.c",
             "linux_joystick.c",
             "xkb_unicode.c",
+            // X11
             "x11_init.c",
             "x11_monitor.c",
             "x11_window.c",
             "glx_context.c",
+            // Wayland
+            "wl_init.c",
+            "wl_monitor.c",
+            "wl_window.c",
         };
         glfw_module.addCSourceFiles(.{
             .root = glfw_dep.path("src"),
             .files = linux_sources,
-            .flags = &.{ "-D_GLFW_X11", "-D_POSIX_C_SOURCE=200809L" },
+            .flags = linux_flags,
         });
     }
 

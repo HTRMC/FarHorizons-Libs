@@ -18,7 +18,7 @@
         },
         .stb = .{
             .url = "https://github.com/nothings/stb/archive/refs/heads/master.tar.gz",
-            .hash = "N-V-__8AAKI8TgB0xGAQ6uIj_iqOLl4-0aBJ7IdfRJd54B6d",
+            .hash = "N-V-__8AAHlDTgDoR5xn9Vs0CtbpTxGSVTTuIZ2XBdmdukTi",
         },
         .tracy = .{
             .url = "https://github.com/wolfpld/tracy/archive/refs/tags/v0.13.1.tar.gz",
