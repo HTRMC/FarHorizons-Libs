@@ -201,6 +201,9 @@ jobs:
           mkdir -p wayland-generated
           WP=wl-protocols
           gen() { wayland-scanner client-header "$1" "$2"; wayland-scanner private-code "$1" "${2%.h}-code.h"; }
+          # Core Wayland protocol
+          gen /usr/share/wayland/wayland.xml wayland-generated/wayland-client-protocol.h
+          # Extension protocols
           gen $WP/stable/xdg-shell/xdg-shell.xml wayland-generated/xdg-shell-client-protocol.h
           gen $WP/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml wayland-generated/xdg-decoration-unstable-v1-client-protocol.h
           gen $WP/stable/viewporter/viewporter.xml wayland-generated/viewporter-client-protocol.h
@@ -292,6 +295,9 @@ jobs:
           mkdir -p wayland-generated
           WP=wl-protocols
           gen() { wayland-scanner client-header "$1" "$2"; wayland-scanner private-code "$1" "${2%.h}-code.h"; }
+          # Core Wayland protocol
+          gen /usr/share/wayland/wayland.xml wayland-generated/wayland-client-protocol.h
+          # Extension protocols
           gen $WP/stable/xdg-shell/xdg-shell.xml wayland-generated/xdg-shell-client-protocol.h
           gen $WP/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml wayland-generated/xdg-decoration-unstable-v1-client-protocol.h
           gen $WP/stable/viewporter/viewporter.xml wayland-generated/viewporter-client-protocol.h
