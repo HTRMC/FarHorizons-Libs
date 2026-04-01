@@ -195,6 +195,26 @@ jobs:
           mkdir -p ../../fastnoise2/lib/x86_64-linux-gnu
           cp Release/lib/libFastNoise.a ../../fastnoise2/lib/x86_64-linux-gnu/
 
+      - name: Generate Wayland protocol headers
+        run: |
+          mkdir -p wayland-generated
+          wayland-scanner client-header /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml wayland-generated/xdg-shell-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml wayland-generated/xdg-shell-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml wayland-generated/xdg-decoration-unstable-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml wayland-generated/xdg-decoration-unstable-v1-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/stable/viewporter/viewporter.xml wayland-generated/viewporter-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/stable/viewporter/viewporter.xml wayland-generated/viewporter-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/unstable/relative-pointer/relative-pointer-unstable-v1.xml wayland-generated/relative-pointer-unstable-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/unstable/relative-pointer/relative-pointer-unstable-v1.xml wayland-generated/relative-pointer-unstable-v1-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml wayland-generated/pointer-constraints-unstable-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml wayland-generated/pointer-constraints-unstable-v1-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/unstable/idle-inhibit/idle-inhibit-unstable-v1.xml wayland-generated/idle-inhibit-unstable-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/unstable/idle-inhibit/idle-inhibit-unstable-v1.xml wayland-generated/idle-inhibit-unstable-v1-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/staging/xdg-activation/xdg-activation-v1.xml wayland-generated/xdg-activation-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/staging/xdg-activation/xdg-activation-v1.xml wayland-generated/xdg-activation-v1-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/staging/fractional-scale/fractional-scale-v1.xml wayland-generated/fractional-scale-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/staging/fractional-scale/fractional-scale-v1.xml wayland-generated/fractional-scale-v1-client-protocol-code.h
+
       - name: Build x86_64-linux-gnu
         run: zig build -Dtarget=x86_64-linux-gnu
 
@@ -269,6 +289,26 @@ jobs:
           ninja FastNoise
           mkdir -p ../../fastnoise2/lib/aarch64-linux-gnu
           cp Release/lib/libFastNoise.a ../../fastnoise2/lib/aarch64-linux-gnu/
+
+      - name: Generate Wayland protocol headers
+        run: |
+          mkdir -p wayland-generated
+          wayland-scanner client-header /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml wayland-generated/xdg-shell-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml wayland-generated/xdg-shell-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml wayland-generated/xdg-decoration-unstable-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml wayland-generated/xdg-decoration-unstable-v1-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/stable/viewporter/viewporter.xml wayland-generated/viewporter-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/stable/viewporter/viewporter.xml wayland-generated/viewporter-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/unstable/relative-pointer/relative-pointer-unstable-v1.xml wayland-generated/relative-pointer-unstable-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/unstable/relative-pointer/relative-pointer-unstable-v1.xml wayland-generated/relative-pointer-unstable-v1-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml wayland-generated/pointer-constraints-unstable-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml wayland-generated/pointer-constraints-unstable-v1-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/unstable/idle-inhibit/idle-inhibit-unstable-v1.xml wayland-generated/idle-inhibit-unstable-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/unstable/idle-inhibit/idle-inhibit-unstable-v1.xml wayland-generated/idle-inhibit-unstable-v1-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/staging/xdg-activation/xdg-activation-v1.xml wayland-generated/xdg-activation-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/staging/xdg-activation/xdg-activation-v1.xml wayland-generated/xdg-activation-v1-client-protocol-code.h
+          wayland-scanner client-header /usr/share/wayland-protocols/staging/fractional-scale/fractional-scale-v1.xml wayland-generated/fractional-scale-v1-client-protocol.h
+          wayland-scanner private-code /usr/share/wayland-protocols/staging/fractional-scale/fractional-scale-v1.xml wayland-generated/fractional-scale-v1-client-protocol-code.h
 
       - name: Build aarch64-linux-gnu
         run: zig build -Dtarget=aarch64-linux-gnu

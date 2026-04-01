@@ -122,6 +122,7 @@ pub fn build(b: *std.Build) !void {
         });
     } else if (t.os.tag == .linux) {
         glfw_module.addSystemIncludePath(.{ .cwd_relative = "/usr/include" });
+        glfw_module.addIncludePath(.{ .cwd_relative = "wayland-generated" });
 
         const linux_flags = &[_][]const u8{ "-D_GLFW_X11", "-D_GLFW_WAYLAND", "-D_POSIX_C_SOURCE=200809L" };
 
