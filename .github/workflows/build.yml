@@ -373,7 +373,11 @@ jobs:
           cp Release/lib/libFastNoise.a ../../fastnoise2/lib/aarch64-macos-none/
 
       - name: Build aarch64-macos-none
-        run: zig build -Dtarget=aarch64-macos-none
+        # Native build (no -Dtarget): an explicit target tag makes Zig treat the
+        # build as cross-compilation and skip macOS SDK detection, so Cocoa's
+        # <Carbon/Carbon.h> isn't found. Native resolves to aarch64-macos-none on
+        # the macos-14 (Apple Silicon) runner, so lib_name/paths still match.
+        run: zig build
 
       - name: Bundle MoltenVK
         run: |
