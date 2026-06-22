@@ -3,6 +3,12 @@ const std = @import("std");
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const t = target.result;
+
+    // macOS SDK path, only needed when cross-compiling to a foreign macOS arch
+    // (e.g. x86_64 from an arm runner). Native builds auto-detect the SDK, but
+    // cross builds don't get the framework search path, so Cocoa's
+    // <Carbon/Carbon.h> isn't found. CI passes -Dmacos_sdk=$(xcrun --show-sdk-path).
+    const macos_sdk = b.option([]const u8, "macos_sdk", "macOS SDK path for cross-compiling (adds framework search path)");
     const glfw_dep = b.dependency("glfw", .{});
     const volk_dep = b.dependency("volk", .{});
     const vulkan_headers_dep = b.dependency("vulkan_headers", .{});
@@ -156,8 +162,14 @@ pub fn build(b: *std.Build) !void {
     } else if (t.os.tag == .macos) {
         // Cocoa backend. Zig compiles .m as Objective-C by extension and
         // resolves the macOS SDK frameworks when building natively on a Mac
-        // runner — so these jobs MUST run on a macOS runner, not cross-compile.
+        // runner. When cross-compiling (foreign arch) the framework search
+        // path isn't auto-added, so feed it from -Dmacos_sdk.
         // GLFW expects manual reference counting (no -fobjc-arc).
+        if (macos_sdk) |sdk| {
+            glfw_module.addSystemFrameworkPath(.{
+                .cwd_relative = b.fmt("{s}/System/Library/Frameworks", .{sdk}),
+            });
+        }
         glfw_module.addCSourceFiles(.{
             .root = glfw_dep.path("src"),
             .files = common_sources,

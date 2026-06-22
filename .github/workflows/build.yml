@@ -402,7 +402,7 @@ jobs:
           # arm64: native build (no -Dtarget so the SDK is auto-detected).
           # x86_64: cross-compile; --sysroot points Zig at the macOS SDK so
           # Cocoa framework headers resolve under the foreign target.
-          for pair in "aarch64-macos-none:" "x86_64-macos-none:-Dtarget=x86_64-macos-none --sysroot $SDK"; do
+          for pair in "aarch64-macos-none:" "x86_64-macos-none:-Dtarget=x86_64-macos-none --sysroot $SDK -Dmacos_sdk=$SDK"; do
             tag="${pair%%:*}"; flags="${pair#*:}"
             zig build $flags
             DEST=zig-out/lib/farhorizons_deps_$tag
