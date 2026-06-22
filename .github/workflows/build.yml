@@ -321,8 +321,12 @@ jobs:
           name: aarch64-linux-gnu
           path: farhorizons_deps_aarch64-linux-gnu.tar.gz
 
-  build-macos-aarch64:
-    runs-on: macos-14 # Apple Silicon
+  build-macos:
+    # Both macOS arches build on the Apple Silicon runner. macos-13 (Intel)
+    # runners are scarce and being retired, so x86_64 is cross-compiled here
+    # instead: clang/cmake cross via -DCMAKE_OSX_ARCHITECTURES, and Zig cross
+    # via -Dtarget + --sysroot so Cocoa's framework headers still resolve.
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
@@ -335,149 +339,87 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install ninja cmake molten-vk
+          brew install ninja cmake
 
-      - name: Clone and build shaderc
+      - name: Clone and build shaderc (both arches)
         run: |
           git clone https://github.com/google/shaderc.git shaderc-src
           cd shaderc-src
           ./utils/git-sync-deps
-          mkdir build && cd build
-          cmake -GNinja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES=arm64 \
-            -DSHADERC_SKIP_TESTS=ON \
-            -DSHADERC_SKIP_EXAMPLES=ON \
-            -DSHADERC_SKIP_COPYRIGHT_CHECK=ON \
-            -DSPIRV_SKIP_TESTS=ON \
-            -DSPIRV_WERROR=OFF \
-            ..
-          ninja
-          mkdir -p ../../shaderc/lib/aarch64-macos-none
-          cp libshaderc/libshaderc_combined.a ../../shaderc/lib/aarch64-macos-none/
+          for pair in "arm64:aarch64-macos-none" "x86_64:x86_64-macos-none"; do
+            arch="${pair%%:*}"; tag="${pair##*:}"
+            rm -rf build && mkdir build && cd build
+            cmake -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_OSX_ARCHITECTURES=$arch \
+              -DSHADERC_SKIP_TESTS=ON \
+              -DSHADERC_SKIP_EXAMPLES=ON \
+              -DSHADERC_SKIP_COPYRIGHT_CHECK=ON \
+              -DSPIRV_SKIP_TESTS=ON \
+              -DSPIRV_WERROR=OFF \
+              ..
+            ninja
+            mkdir -p ../../shaderc/lib/$tag
+            cp libshaderc/libshaderc_combined.a ../../shaderc/lib/$tag/
+            cd ..
+          done
 
-      - name: Clone and build FastNoise2
+      - name: Clone and build FastNoise2 (both arches)
         run: |
           git clone --depth 1 https://github.com/Auburn/FastNoise2.git fastnoise2-src
           cd fastnoise2-src
-          mkdir build && cd build
-          cmake -GNinja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES=arm64 \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DFASTNOISE2_TESTS=OFF \
-            -DFASTNOISE2_TOOLS=OFF \
-            ..
-          ninja FastNoise
-          mkdir -p ../../fastnoise2/lib/aarch64-macos-none
-          cp Release/lib/libFastNoise.a ../../fastnoise2/lib/aarch64-macos-none/
+          for pair in "arm64:aarch64-macos-none" "x86_64:x86_64-macos-none"; do
+            arch="${pair%%:*}"; tag="${pair##*:}"
+            rm -rf build && mkdir build && cd build
+            cmake -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_OSX_ARCHITECTURES=$arch \
+              -DBUILD_SHARED_LIBS=OFF \
+              -DFASTNOISE2_TESTS=OFF \
+              -DFASTNOISE2_TOOLS=OFF \
+              ..
+            ninja FastNoise
+            mkdir -p ../../fastnoise2/lib/$tag
+            cp Release/lib/libFastNoise.a ../../fastnoise2/lib/$tag/
+            cd ..
+          done
 
-      - name: Build aarch64-macos-none
-        # Native build (no -Dtarget): an explicit target tag makes Zig treat the
-        # build as cross-compilation and skip macOS SDK detection, so Cocoa's
-        # <Carbon/Carbon.h> isn't found. Native resolves to aarch64-macos-none on
-        # the macos-14 (Apple Silicon) runner, so lib_name/paths still match.
-        run: zig build
-
-      - name: Bundle MoltenVK
+      - name: Download universal MoltenVK
         run: |
-          # MoltenVK is a runtime dylib (not built here). Pull the Homebrew
-          # build and re-stamp its install_name to @rpath so the consumer's
-          # @executable_path/../Frameworks rpath resolves it inside the .app.
-          DEST=zig-out/lib/farhorizons_deps_aarch64-macos-none
-          cp "$(brew --prefix molten-vk)/lib/libMoltenVK.dylib" "$DEST/"
-          install_name_tool -id @rpath/libMoltenVK.dylib "$DEST/libMoltenVK.dylib"
+          # Official MoltenVK release ships a universal (arm64+x86_64) dylib,
+          # so the same file serves both tarballs. Homebrew only bottles the
+          # host arch, which would leave Intel users without a usable dylib.
+          curl -fL -o mvk.tar https://github.com/KhronosGroup/MoltenVK/releases/latest/download/MoltenVK-macos.tar
+          mkdir mvk && tar -xf mvk.tar -C mvk
+          MVK=$(find mvk -name libMoltenVK.dylib | head -1)
+          echo "Found MoltenVK: $MVK"; lipo -info "$MVK"
+          cp "$MVK" libMoltenVK.dylib
+          install_name_tool -id @rpath/libMoltenVK.dylib libMoltenVK.dylib
 
-      - name: List output
-        run: find zig-out -type f
-
-      - name: Package
+      - name: Build, bundle and package (both arches)
         run: |
-          cd zig-out/lib
-          tar -czvf ../../farhorizons_deps_aarch64-macos-none.tar.gz farhorizons_deps_aarch64-macos-none/
+          SDK=$(xcrun --show-sdk-path)
+          # arm64: native build (no -Dtarget so the SDK is auto-detected).
+          # x86_64: cross-compile; --sysroot points Zig at the macOS SDK so
+          # Cocoa framework headers resolve under the foreign target.
+          for pair in "aarch64-macos-none:" "x86_64-macos-none:-Dtarget=x86_64-macos-none --sysroot $SDK"; do
+            tag="${pair%%:*}"; flags="${pair#*:}"
+            zig build $flags
+            DEST=zig-out/lib/farhorizons_deps_$tag
+            cp libMoltenVK.dylib "$DEST/"
+            cd zig-out/lib
+            tar -czvf ../../farhorizons_deps_$tag.tar.gz farhorizons_deps_$tag/
+            cd ../..
+          done
+          find . -maxdepth 1 -name '*.tar.gz'
 
       - uses: actions/upload-artifact@v4
         with:
-          name: aarch64-macos-none
-          path: farhorizons_deps_aarch64-macos-none.tar.gz
-
-  build-macos-x86_64:
-    runs-on: macos-13 # last Intel runner
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Read Zig version
-        run: echo "ZIG_VERSION=$(cat .zigversion)" >> $GITHUB_ENV
-
-      - uses: mlugg/setup-zig@v2
-        with:
-          version: ${{ env.ZIG_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          brew install ninja cmake molten-vk
-
-      - name: Clone and build shaderc
-        run: |
-          git clone https://github.com/google/shaderc.git shaderc-src
-          cd shaderc-src
-          ./utils/git-sync-deps
-          mkdir build && cd build
-          cmake -GNinja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES=x86_64 \
-            -DSHADERC_SKIP_TESTS=ON \
-            -DSHADERC_SKIP_EXAMPLES=ON \
-            -DSHADERC_SKIP_COPYRIGHT_CHECK=ON \
-            -DSPIRV_SKIP_TESTS=ON \
-            -DSPIRV_WERROR=OFF \
-            ..
-          ninja
-          mkdir -p ../../shaderc/lib/x86_64-macos-none
-          cp libshaderc/libshaderc_combined.a ../../shaderc/lib/x86_64-macos-none/
-
-      - name: Clone and build FastNoise2
-        run: |
-          git clone --depth 1 https://github.com/Auburn/FastNoise2.git fastnoise2-src
-          cd fastnoise2-src
-          mkdir build && cd build
-          cmake -GNinja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES=x86_64 \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DFASTNOISE2_TESTS=OFF \
-            -DFASTNOISE2_TOOLS=OFF \
-            ..
-          ninja FastNoise
-          mkdir -p ../../fastnoise2/lib/x86_64-macos-none
-          cp Release/lib/libFastNoise.a ../../fastnoise2/lib/x86_64-macos-none/
-
-      - name: Build x86_64-macos-none
-        # Native build (no -Dtarget) for SDK framework resolution — native
-        # resolves to x86_64-macos-none on the macos-13 (Intel) runner.
-        run: zig build
-
-      - name: Bundle MoltenVK
-        run: |
-          DEST=zig-out/lib/farhorizons_deps_x86_64-macos-none
-          cp "$(brew --prefix molten-vk)/lib/libMoltenVK.dylib" "$DEST/"
-          install_name_tool -id @rpath/libMoltenVK.dylib "$DEST/libMoltenVK.dylib"
-
-      - name: List output
-        run: find zig-out -type f
-
-      - name: Package
-        run: |
-          cd zig-out/lib
-          tar -czvf ../../farhorizons_deps_x86_64-macos-none.tar.gz farhorizons_deps_x86_64-macos-none/
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: x86_64-macos-none
-          path: farhorizons_deps_x86_64-macos-none.tar.gz
+          name: macos
+          path: farhorizons_deps_*-macos-none.tar.gz
 
   release:
-    needs: [build-headers, build-windows, build-linux-x86_64, build-linux-aarch64, build-macos-aarch64, build-macos-x86_64]
+    needs: [build-headers, build-windows, build-linux-x86_64, build-linux-aarch64, build-macos]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
