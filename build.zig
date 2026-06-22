@@ -153,6 +153,26 @@ pub fn build(b: *std.Build) !void {
             .files = linux_sources,
             .flags = linux_flags,
         });
+    } else if (t.os.tag == .macos) {
+        // Cocoa backend. Zig compiles .m as Objective-C by extension and
+        // resolves the macOS SDK frameworks when building natively on a Mac
+        // runner — so these jobs MUST run on a macOS runner, not cross-compile.
+        // GLFW expects manual reference counting (no -fobjc-arc).
+        glfw_module.addCSourceFiles(.{
+            .root = glfw_dep.path("src"),
+            .files = common_sources,
+            .flags = &.{"-D_GLFW_COCOA"},
+        });
+        const macos_sources = &[_][]const u8{
+            "cocoa_time.c",  "posix_thread.c", "posix_module.c",
+            "cocoa_init.m",  "cocoa_joystick.m", "cocoa_monitor.m",
+            "cocoa_window.m", "nsgl_context.m",
+        };
+        glfw_module.addCSourceFiles(.{
+            .root = glfw_dep.path("src"),
+            .files = macos_sources,
+            .flags = &.{"-D_GLFW_COCOA"},
+        });
     }
 
     const glfw_lib = b.addLibrary(.{

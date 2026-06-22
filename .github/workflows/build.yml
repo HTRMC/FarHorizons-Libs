@@ -321,8 +321,84 @@ jobs:
           name: aarch64-linux-gnu
           path: farhorizons_deps_aarch64-linux-gnu.tar.gz
 
+  build-macos-aarch64:
+    runs-on: macos-14 # Apple Silicon
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read Zig version
+        run: echo "ZIG_VERSION=$(cat .zigversion)" >> $GITHUB_ENV
+
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          brew install ninja cmake molten-vk
+
+      - name: Clone and build shaderc
+        run: |
+          git clone https://github.com/google/shaderc.git shaderc-src
+          cd shaderc-src
+          ./utils/git-sync-deps
+          mkdir build && cd build
+          cmake -GNinja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DSHADERC_SKIP_TESTS=ON \
+            -DSHADERC_SKIP_EXAMPLES=ON \
+            -DSHADERC_SKIP_COPYRIGHT_CHECK=ON \
+            -DSPIRV_SKIP_TESTS=ON \
+            -DSPIRV_WERROR=OFF \
+            ..
+          ninja
+          mkdir -p ../../shaderc/lib/aarch64-macos-none
+          cp libshaderc/libshaderc_combined.a ../../shaderc/lib/aarch64-macos-none/
+
+      - name: Clone and build FastNoise2
+        run: |
+          git clone --depth 1 https://github.com/Auburn/FastNoise2.git fastnoise2-src
+          cd fastnoise2-src
+          mkdir build && cd build
+          cmake -GNinja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DFASTNOISE2_TESTS=OFF \
+            -DFASTNOISE2_TOOLS=OFF \
+            ..
+          ninja FastNoise
+          mkdir -p ../../fastnoise2/lib/aarch64-macos-none
+          cp Release/lib/libFastNoise.a ../../fastnoise2/lib/aarch64-macos-none/
+
+      - name: Build aarch64-macos-none
+        run: zig build -Dtarget=aarch64-macos-none
+
+      - name: Bundle MoltenVK
+        run: |
+          # MoltenVK is a runtime dylib (not built here). Pull the Homebrew
+          # build and re-stamp its install_name to @rpath so the consumer's
+          # @executable_path/../Frameworks rpath resolves it inside the .app.
+          DEST=zig-out/lib/farhorizons_deps_aarch64-macos-none
+          cp "$(brew --prefix molten-vk)/lib/libMoltenVK.dylib" "$DEST/"
+          install_name_tool -id @rpath/libMoltenVK.dylib "$DEST/libMoltenVK.dylib"
+
+      - name: List output
+        run: find zig-out -type f
+
+      - name: Package
+        run: |
+          cd zig-out/lib
+          tar -czvf ../../farhorizons_deps_aarch64-macos-none.tar.gz farhorizons_deps_aarch64-macos-none/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aarch64-macos-none
+          path: farhorizons_deps_aarch64-macos-none.tar.gz
+
   release:
-    needs: [build-headers, build-windows, build-linux-x86_64, build-linux-aarch64]
+    needs: [build-headers, build-windows, build-linux-x86_64, build-linux-aarch64, build-macos-aarch64]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
