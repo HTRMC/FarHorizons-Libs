@@ -169,6 +169,12 @@ pub fn build(b: *std.Build) !void {
             glfw_module.addSystemFrameworkPath(.{
                 .cwd_relative = b.fmt("{s}/System/Library/Frameworks", .{sdk}),
             });
+            // Non-framework SDK headers (e.g. libDER/DERItem.h, pulled in by
+            // Security.framework) live here. --sysroot doesn't add it for the
+            // cross target, so do it explicitly.
+            glfw_module.addSystemIncludePath(.{
+                .cwd_relative = b.fmt("{s}/usr/include", .{sdk}),
+            });
         }
         glfw_module.addCSourceFiles(.{
             .root = glfw_dep.path("src"),
